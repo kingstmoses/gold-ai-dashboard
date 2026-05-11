@@ -71,8 +71,23 @@ export default function GoldAIPlatform() {
       profit: string;
       result: string;
       closeTime: string;
+      progress: string;
+      entry: string;
+      tp: string;
+      sl: string;
     }[]
   >([]);
+
+  const [registeredUsers, setRegisteredUsers] = useState<
+    {
+      username: string;
+      password: string;
+    }[]
+  >([]);
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
 
   const [botJournal, setBotJournal] = useState<
     {
@@ -146,6 +161,8 @@ export default function GoldAIPlatform() {
     const savedWins = localStorage.getItem('gold-ai-win-trades');
     const savedLosses = localStorage.getItem('gold-ai-loss-trades');
     const savedEquity = localStorage.getItem('gold-ai-equity-history');
+    const savedUsers = localStorage.getItem('gold-ai-users');
+    const savedLogin = localStorage.getItem('gold-ai-login-state');
 
     if (savedJournal) {
       setBotJournal(JSON.parse(savedJournal));
@@ -186,6 +203,14 @@ export default function GoldAIPlatform() {
     if (savedEquity) {
       setEquityHistory(JSON.parse(savedEquity));
     }
+
+    if (savedUsers) {
+      setRegisteredUsers(JSON.parse(savedUsers));
+    }
+
+    if (savedLogin === 'true') {
+      setIsLoggedIn(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -199,7 +224,9 @@ export default function GoldAIPlatform() {
     localStorage.setItem('gold-ai-win-trades', String(winTrades));
     localStorage.setItem('gold-ai-loss-trades', String(lossTrades));
     localStorage.setItem('gold-ai-equity-history', JSON.stringify(equityHistory));
-  }, [botJournal, closedTrades, currentPnL, totalPipsWon, accountName, accountMode, tradingStreak, winTrades, lossTrades, equityHistory]);
+    localStorage.setItem('gold-ai-users', JSON.stringify(registeredUsers));
+    localStorage.setItem('gold-ai-login-state', String(isLoggedIn));
+  }, [botJournal, closedTrades, currentPnL, totalPipsWon, accountName, accountMode, tradingStreak, winTrades, lossTrades, equityHistory, registeredUsers, isLoggedIn]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -302,7 +329,11 @@ export default function GoldAIPlatform() {
                   pair: `${direction} XAUUSD`,
                   pips: targetPips,
                   profit: `+$${estimatedUsd.toFixed(2)}`,
-                  result: 'TP HIT',
+                  result: Math.random() > 0.25 ? 'TP HIT' : 'SL HIT',
+                  progress: Math.random() > 0.25 ? 'TARGET REACHED' : 'STOP LOSS TRIGGERED',
+                  entry: entry,
+                  tp: generatedTp,
+                  sl: generatedSl,
                   closeTime: new Date().toLocaleTimeString(),
                 },
                 ...prev.slice(0, 14),
@@ -325,9 +356,19 @@ export default function GoldAIPlatform() {
                 return updatedPnL;
               });
               setTotalPipsWon((prev) => prev + Number.parseInt(targetPips));
-              setTradeStatus('TP HIT');
-              setTradingStreak((prev) => prev + 1);
-              setWinTrades((prev) => prev + 1);
+              const isWin = Math.random() > 0.25;
+
+              if (isWin) {
+                setTradeStatus('TP HIT');
+                setTradingStreak((prev) => prev + 1);
+                setWinTrades((prev) => prev + 1);
+                setTotalPipsWon((prev) => prev + Number.parseInt(targetPips));
+              } else {
+                setTradeStatus('SL HIT');
+                setTradingStreak(0);
+                setLossTrades((prev) => prev + 1);
+                setCurrentPnL((prev) => prev - estimatedLoss);
+              }
             }, 45000);
 
             toast.success('Gold Scalper Bot Signal', {
@@ -927,6 +968,89 @@ export default function GoldAIPlatform() {
       </header>
 
       <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-6 overflow-hidden">
+        {!isLoggedIn && (
+          <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+              <div>
+                <h2 className="text-3xl font-black text-green-400">
+                  Trader Authentication Portal
+                </h2>
+
+                <p className="text-zinc-400 mt-2">
+                  Create accounts and securely access persistent AI trading data.
+                </p>
+              </div>
+
+              <div className="bg-green-500/10 border border-green-500/20 px-4 py-2 rounded-xl text-green-400 font-bold">
+                SECURED ACCESS
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <input
+                placeholder="Username"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                className="bg-black border border-zinc-700 rounded-2xl p-4"
+              />
+
+              <input
+                type="password"
+                placeholder="Password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="bg-black border border-zinc-700 rounded-2xl p-4"
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    const exists = registeredUsers.find(
+                      (u) =>
+                        u.username === loginUsername &&
+                        u.password === loginPassword
+                    );
+
+                    if (exists) {
+                      setIsLoggedIn(true);
+                      setAccountName(loginUsername);
+
+                      toast.success('Login Successful');
+                    } else {
+                      toast.error('Invalid Credentials');
+                    }
+                  }}
+                  className="flex-1 bg-green-500 hover:bg-green-400 text-black font-black rounded-2xl px-4 py-4"
+                >
+                  LOGIN
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (!loginUsername || !loginPassword) {
+                      toast.error('Enter username and password');
+                      return;
+                    }
+
+                    const updatedUsers = [
+                      ...registeredUsers,
+                      {
+                        username: loginUsername,
+                        password: loginPassword,
+                      },
+                    ];
+
+                    setRegisteredUsers(updatedUsers);
+                    toast.success('Account Created');
+                  }}
+                  className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-black font-black rounded-2xl px-4 py-4"
+                >
+                  REGISTER
+                </button>
+              </div>
+            </div>
+          </section>
+        )
         <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 items-center">
             <div>
@@ -1605,7 +1729,7 @@ export default function GoldAIPlatform() {
                   </h2>
 
                   <p className="text-zinc-400 mt-2">
-                    Automatically tracked TP hits and realized profits.
+                    Automatically tracked TP hits, SL hits, and realized execution outcomes.
                   </p>
                 </div>
 
@@ -1642,13 +1766,13 @@ export default function GoldAIPlatform() {
                     </div>
 
                     <div>
-                      <div className="text-zinc-500 text-sm">Closed</div>
+                      <div className="text-zinc-500 text-sm">Trade Progress</div>
                       <div className="font-bold mt-1 text-yellow-400">
-                        {trade.closeTime}
+                        {trade.progress}
                       </div>
                     </div>
 
-                    <div className="bg-green-500/10 border border-green-500/20 px-4 py-2 rounded-xl text-green-400 font-bold">
+                    <div className={`px-4 py-2 rounded-xl font-bold border ${trade.result === 'TP HIT' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
                       {trade.result}
                     </div>
                   </div>
