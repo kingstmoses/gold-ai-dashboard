@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 // npm install sonner
 import { toast, Toaster } from "sonner";
 import {
@@ -42,6 +42,14 @@ export default function GoldAIPlatform() {
   const [lastUpdate, setLastUpdate] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [signalCount, setSignalCount] = useState(0);
+  const [botJournal, setBotJournal] = useState<
+    {
+      pair: string;
+      result: string;
+      session: string;
+      status: string;
+    }[]
+  >([]);
   const [lastSignal, setLastSignal] = useState('No signals yet');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [activeTrade, setActiveTrade] = useState(false);
@@ -56,7 +64,7 @@ export default function GoldAIPlatform() {
   const [tradeType, setTradeType] = useState("BUY");
 
   const [dailyTarget] = useState(150);
-  const [currentPnL] = useState(93);
+  const [currentPnL] = useState(0);
   const [maxDrawdown] = useState(-40);
 
   const today = new Date().getDay();
@@ -134,20 +142,35 @@ export default function GoldAIPlatform() {
 
           setLastUpdate(new Date().toLocaleTimeString());
 
-          if (!marketClosed && notificationsEnabled && signalCooldown === 0) {
+          if (
+            !marketClosed &&
+            notificationsEnabled &&
+            signalCooldown === 0 &&
+            livePrice > 3000
+          ) {
             const signalMessage = `BUY opportunity near ${livePrice.toFixed(2)}`;
 
-            setSignalCount((prev) => prev + 1);
+            setSignalCount((prev: number) => prev + 1);
             setLastSignal(signalMessage);
             setActiveTrade(true);
             setTradeStatus('ENTRY TRIGGERED');
-            setSignalCooldown(60);
+            setSignalCooldown(180);
 
             if (livePrice > goldValue + 2) {
               setSignalQuality('A+');
             } else {
               setSignalQuality('A');
             }
+
+            setBotJournal((prev) => [
+              {
+                pair: `XAUUSD ${livePrice > goldValue ? 'BUY' : 'SELL'}`,
+                result: 'RUNNING',
+                session: 'LIVE MARKET',
+                status: 'OPEN',
+              },
+              ...prev.slice(0, 9),
+            ]);
 
             toast.success('Gold Scalper Bot Signal', {
               description: signalMessage,
@@ -180,7 +203,7 @@ export default function GoldAIPlatform() {
       controller.abort();
       clearInterval(interval);
     };
-  }, []);
+  }, [notificationsEnabled, signalCooldown, marketClosed, soundEnabled, goldValue]);
 
   const liveSignals = [
     {
@@ -391,26 +414,16 @@ export default function GoldAIPlatform() {
     },
   ];
 
-  const signalHistory = [
-    {
-      pair: "XAUUSD BUY",
-      result: "+124 PIPS",
-      session: "London",
-      status: "TP HIT",
-    },
-    {
-      pair: "XAUUSD BUY",
-      result: "+86 PIPS",
-      session: "New York",
-      status: "TP HIT",
-    },
-    {
-      pair: "XAUUSD SELL",
-      result: "-22 PIPS",
-      session: "Asia",
-      status: "SL HIT",
-    },
-  ];
+  const signalHistory = botJournal.length > 0
+    ? botJournal
+    : [
+        {
+          pair: 'BOT JOURNAL RESET',
+          result: 'WAITING FOR LIVE TRADES',
+          session: 'LIVE MARKET',
+          status: 'STANDBY',
+        },
+      ];
 
   const sniperEntries = [
     {
@@ -1765,7 +1778,7 @@ function OverviewCard({
   title: string;
   value: string;
   subtitle: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-2xl">
