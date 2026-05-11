@@ -204,10 +204,12 @@ export default function GoldAIPlatform() {
               audio.play().catch(() => {});
             }
 
-            new Notification('Gold Scalper Bot', {
+            if (Notification.permission === 'granted') {
+              new Notification('Gold Scalper Bot', {
               body: `${signalMessage} | TARGET ${targetPips}`,
               icon: 'https://cdn-icons-png.flaticon.com/512/2933/2933245.png',
-            });
+              });
+            }
           }
         }
       } catch (error) {
@@ -367,7 +369,7 @@ export default function GoldAIPlatform() {
     {
       title: "Order Flow",
       value: "BULLISH",
-      color: "text-green-400",
+      color: londonActive ? "text-green-400" : "text-zinc-500",
     },
     {
       title: "Liquidity Pressure",
@@ -377,7 +379,7 @@ export default function GoldAIPlatform() {
     {
       title: "Manipulation Risk",
       value: "MEDIUM",
-      color: "text-yellow-400",
+      color: nyActive ? "text-yellow-400" : "text-zinc-500",
     },
     {
       title: "Institutional Bias",
@@ -516,26 +518,42 @@ export default function GoldAIPlatform() {
     },
   ];
 
+  const marketBias = goldValue > 3350 ? 'STRONG BULLISH' : goldValue > 3320 ? 'BULLISH' : 'BEARISH';
+
+  const volatilityState =
+    marketData.high - marketData.low > 20
+      ? 'EXPANDING'
+      : 'NORMAL';
+
+  const dollarStrength =
+    goldValue > 3340 ? 'WEAKENING' : 'STRENGTHENING';
+
+  const fearGreed =
+    volatilityState === 'EXPANDING' ? 'RISK OFF' : 'NEUTRAL';
+
+  const trendScore =
+    goldValue > marketData.bid ? '89 / 100' : '72 / 100';
+
   const marketPulse = [
     {
-      label: "Fear & Greed",
-      value: "RISK OFF",
-      color: "text-orange-400",
+      label: 'Fear & Greed',
+      value: fearGreed,
+      color: 'text-orange-400',
     },
     {
-      label: "Dollar Strength",
-      value: "WEAKENING",
-      color: "text-red-400",
+      label: 'Dollar Strength',
+      value: dollarStrength,
+      color: dollarStrength === 'WEAKENING' ? 'text-red-400' : 'text-blue-400',
     },
     {
-      label: "Volatility State",
-      value: "EXPANDING",
-      color: "text-cyan-400",
+      label: 'Volatility State',
+      value: volatilityState,
+      color: volatilityState === 'EXPANDING' ? 'text-cyan-400' : 'text-zinc-300',
     },
     {
-      label: "AI Pulse",
-      value: "BULLISH",
-      color: "text-green-400",
+      label: 'AI Pulse',
+      value: marketBias,
+      color: marketBias.includes('BULLISH') ? 'text-green-400' : 'text-red-400',
     },
   ];
 
@@ -592,7 +610,7 @@ export default function GoldAIPlatform() {
     {
       title: "Liquidity Trap",
       value: "ACTIVE",
-      color: "text-red-400",
+      color: lunchSession ? "text-red-400" : "text-zinc-500",
     },
     {
       title: "AI Protection",
@@ -694,7 +712,7 @@ export default function GoldAIPlatform() {
   const estimatedLoss =
     (slPips / 10) * (lotSize / 0.01);
 
-  const remainingTarget = dailyTarget - currentPnL;
+  const remainingTarget = Math.max(dailyTarget - currentPnL, 0);
 
   const useSignal = (
     type: string,
@@ -720,6 +738,7 @@ export default function GoldAIPlatform() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      <MarqueeStyles />
       <Toaster richColors position="top-right" />
       <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -791,12 +810,22 @@ export default function GoldAIPlatform() {
               icon={<ShieldCheck className="w-5 h-5 text-purple-400" />}
             />
 
-            <OverviewCard
-              title="Last Signal"
-              value={lastSignal.length > 45 ? lastSignal.slice(0, 45) + '...' : lastSignal}
-              subtitle="Latest bot alert"
-              icon={<Activity className="w-5 h-5 text-red-400" />}
-            />
+            <div className="xl:col-span-2 bg-zinc-900 border border-zinc-800 rounded-3xl p-5 overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-zinc-400 text-sm">Last Signal</div>
+                <Activity className="w-5 h-5 text-red-400" />
+              </div>
+
+              <div className="relative overflow-hidden rounded-xl bg-black border border-zinc-800 h-12 flex items-center">
+                <div className="animate-marquee whitespace-nowrap text-lg font-bold text-green-400 px-4">
+                  {lastSignal}
+                </div>
+              </div>
+
+              <div className="text-cyan-400 text-xs mt-3 font-medium">
+                Live execution signal stream
+              </div>
+            </div>
 
             <OverviewCard
               title="Live Gold Price"
@@ -807,14 +836,14 @@ export default function GoldAIPlatform() {
 
             <OverviewCard
               title="AI Trend Score"
-              value="82 / 100"
+              value={trendScore}
               subtitle="Institutional Bullish"
               icon={<BrainCircuit className="w-5 h-5 text-cyan-400" />}
             />
 
             <OverviewCard
               title="Volatility"
-              value="HIGH"
+              value={volatilityState}
               subtitle="ATR Expanding"
               icon={<Activity className="w-5 h-5 text-orange-400" />}
             />
@@ -1837,12 +1866,34 @@ function OverviewCard({
         {icon}
       </div>
 
-      <div className="text-3xl font-bold mt-4">{value}</div>
+      <div className="text-2xl font-bold mt-4 break-words">{value}</div>
 
       <div className="text-green-400 text-sm mt-3 font-medium">
         {subtitle}
       </div>
     </div>
+  );
+}
+
+function MarqueeStyles() {
+  return (
+    <style jsx global>{`
+      @keyframes marquee {
+        0% {
+          transform: translateX(100%);
+        }
+
+        100% {
+          transform: translateX(-100%);
+        }
+      }
+
+      .animate-marquee {
+        display: inline-block;
+        min-width: 100%;
+        animation: marquee 18s linear infinite;
+      }
+    `}</style>
   );
 }
 
