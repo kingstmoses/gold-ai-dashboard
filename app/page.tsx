@@ -287,21 +287,27 @@ export default function GoldAIPlatform() {
     },
   ];
 
+  const activeHour = new Date().getHours();
+
+  const londonActive = activeHour >= 10 && activeHour <= 13;
+  const nyActive = activeHour >= 15 && activeHour <= 18;
+  const lunchSession = activeHour >= 13 && activeHour <= 14;
+
   const liquidityRadar = [
     {
       level: "Buy-Side Liquidity",
       status: "TARGETED",
-      color: "text-green-400",
+      color: londonActive ? "text-green-400" : "text-zinc-400",
     },
     {
       level: "Sell-Side Liquidity",
       status: "SWEPT",
-      color: "text-red-400",
+      color: lunchSession ? "text-red-400" : "text-zinc-400",
     },
     {
       level: "Equal Highs",
       status: "ACTIVE",
-      color: "text-yellow-400",
+      color: nyActive ? "text-yellow-400" : "text-zinc-400",
     },
   ];
 
@@ -413,25 +419,44 @@ export default function GoldAIPlatform() {
     },
   ];
 
+  const dynamicWinRate =
+    activeHour >= 8 && activeHour <= 10
+      ? '95%'
+      : activeHour >= 15 && activeHour <= 17
+      ? '88%'
+      : '79%';
+
+  const dynamicSignalCount =
+    activeHour >= 8 && activeHour <= 10
+      ? String(18 + Math.floor(Math.random() * 8))
+      : String(6 + Math.floor(Math.random() * 6));
+
+  const dynamicRR =
+    activeHour >= 8 && activeHour <= 10
+      ? '1 : 4.1'
+      : activeHour >= 15 && activeHour <= 17
+      ? '1 : 3.2'
+      : '1 : 2.0';
+
   const botAnalytics = [
     {
       label: "Bot Win Rate",
-      value: "91%",
+      value: dynamicWinRate,
       color: "text-green-400",
     },
     {
       label: "Signals Today",
-      value: "14",
+      value: dynamicSignalCount,
       color: "text-cyan-400",
     },
     {
       label: "Average RR",
-      value: "1 : 3.4",
+      value: dynamicRR,
       color: "text-yellow-400",
     },
     {
       label: "Bot Status",
-      value: marketClosed ? "PAUSED" : "RUNNING",
+      value: marketClosed ? "PAUSED" : activeTrade ? "EXECUTING" : "RUNNING",
       color: marketClosed ? "text-red-400" : "text-emerald-400",
     },
   ];
@@ -580,19 +605,19 @@ export default function GoldAIPlatform() {
     {
       session: "London Open",
       time: "10:00 EAT",
-      state: "HIGH MOMENTUM",
+      state: londonActive ? "LIVE MOMENTUM ACTIVE" : "AWAITING OPEN",
       color: "text-green-400",
     },
     {
       session: "NY Overlap",
       time: "15:00 EAT",
-      state: "ELITE VOLATILITY",
+      state: nyActive ? "VOLATILITY EXPANSION" : "PENDING ACTIVATION",
       color: "text-yellow-400",
     },
     {
       session: "Lunch Hours",
       time: "13:00 EAT",
-      state: "LOW QUALITY",
+      state: lunchSession ? "LOW LIQUIDITY ACTIVE" : "INACTIVE",
       color: "text-red-400",
     },
   ];
@@ -645,7 +670,10 @@ export default function GoldAIPlatform() {
   const eliteTradingWindow = {
     start: "08:00 EAT",
     end: "10:59 EAT",
-    status: "PRIMARY PROFIT WINDOW",
+    status:
+      activeHour >= 8 && activeHour <= 10
+        ? "LIVE ELITE EXECUTION WINDOW"
+        : "PRIMARY PROFIT WINDOW",
     averageRR: "1 : 3.8",
     winRate: "95%",
   };
