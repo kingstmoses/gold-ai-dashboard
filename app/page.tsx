@@ -14,6 +14,16 @@ import {
   BarChart3,
 } from "lucide-react";
 
+import {
+  LineChart,
+  Line,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
+
 // Suggested project structure:
 // /components
 //   ├── DashboardHeader.tsx
@@ -46,6 +56,12 @@ export default function GoldAIPlatform() {
   const [tradingStreak, setTradingStreak] = useState(0);
   const [winTrades, setWinTrades] = useState(0);
   const [lossTrades, setLossTrades] = useState(0);
+  const [equityHistory, setEquityHistory] = useState<
+    {
+      time: string;
+      pnl: number;
+    }[]
+  >([]);
   const [signalCount, setSignalCount] = useState(0);
   const [closedTrades, setClosedTrades] = useState<
     {
@@ -128,6 +144,7 @@ export default function GoldAIPlatform() {
     const savedStreak = localStorage.getItem('gold-ai-trading-streak');
     const savedWins = localStorage.getItem('gold-ai-win-trades');
     const savedLosses = localStorage.getItem('gold-ai-loss-trades');
+    const savedEquity = localStorage.getItem('gold-ai-equity-history');
 
     if (savedJournal) {
       setBotJournal(JSON.parse(savedJournal));
@@ -164,6 +181,10 @@ export default function GoldAIPlatform() {
     if (savedLosses) {
       setLossTrades(Number(savedLosses));
     }
+
+    if (savedEquity) {
+      setEquityHistory(JSON.parse(savedEquity));
+    }
   }, []);
 
   useEffect(() => {
@@ -176,7 +197,8 @@ export default function GoldAIPlatform() {
     localStorage.setItem('gold-ai-trading-streak', String(tradingStreak));
     localStorage.setItem('gold-ai-win-trades', String(winTrades));
     localStorage.setItem('gold-ai-loss-trades', String(lossTrades));
-  }, [botJournal, closedTrades, currentPnL, totalPipsWon, accountName, accountMode, tradingStreak, winTrades, lossTrades]);
+    localStorage.setItem('gold-ai-equity-history', JSON.stringify(equityHistory));
+  }, [botJournal, closedTrades, currentPnL, totalPipsWon, accountName, accountMode, tradingStreak, winTrades, lossTrades, equityHistory]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -286,6 +308,17 @@ export default function GoldAIPlatform() {
               ]);
 
               setCurrentPnL((prev) => prev + estimatedUsd);
+
+              setEquityHistory((prev) => [
+                ...prev,
+                {
+                  time: new Date().toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
+                  pnl: Number((currentPnL + estimatedUsd).toFixed(2)),
+                },
+              ].slice(-20));
               setTotalPipsWon((prev) => prev + Number.parseInt(targetPips));
               setTradeStatus('TP HIT');
               setTradingStreak((prev) => prev + 1);
@@ -1519,6 +1552,42 @@ export default function GoldAIPlatform() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </section>
+
+            <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+                <div>
+                  <h2 className="text-3xl font-black text-cyan-400">
+                    Equity Growth Curve
+                  </h2>
+
+                  <p className="text-zinc-400 mt-2">
+                    Real-time bot profit accumulation and performance tracking.
+                  </p>
+                </div>
+
+                <div className="bg-cyan-500/10 border border-cyan-500/20 px-4 py-2 rounded-xl text-cyan-400 font-bold">
+                  LIVE EQUITY
+                </div>
+              </div>
+
+              <div className="bg-black border border-zinc-800 rounded-2xl p-4 h-[320px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={equityHistory.length > 0 ? equityHistory : [{ time: 'START', pnl: 0 }] }>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                    <XAxis dataKey="time" stroke="#71717a" />
+                    <YAxis stroke="#71717a" />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="pnl"
+                      stroke="#22c55e"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </section>
 
