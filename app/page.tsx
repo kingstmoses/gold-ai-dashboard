@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-// npm install sonner
+// Required packages:
+// npm install sonner recharts lucide-react
 import { toast, Toaster } from "sonner";
 import {
   TrendingUp,
@@ -307,18 +308,22 @@ export default function GoldAIPlatform() {
                 ...prev.slice(0, 14),
               ]);
 
-              setCurrentPnL((prev) => prev + estimatedUsd);
+              setCurrentPnL((prev) => {
+                const updatedPnL = prev + estimatedUsd;
 
-              setEquityHistory((prev) => [
-                ...prev,
-                {
-                  time: new Date().toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  }),
-                  pnl: Number((currentPnL + estimatedUsd).toFixed(2)),
-                },
-              ].slice(-20));
+                setEquityHistory((history) => [
+                  ...history,
+                  {
+                    time: new Date().toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }),
+                    pnl: Number(updatedPnL.toFixed(2)),
+                  },
+                ].slice(-20));
+
+                return updatedPnL;
+              });
               setTotalPipsWon((prev) => prev + Number.parseInt(targetPips));
               setTradeStatus('TP HIT');
               setTradingStreak((prev) => prev + 1);
@@ -1101,6 +1106,7 @@ export default function GoldAIPlatform() {
 
               <div className="rounded-2xl overflow-hidden border border-zinc-800 bg-black h-[500px]">
                 <iframe
+                  loading="lazy"
                   src="https://s.tradingview.com/widgetembed/?symbol=OANDA%3AXAUUSD&interval=15&theme=dark&style=1&timezone=Africa%2FNairobi"
                   width="100%"
                   height="100%"
@@ -2062,6 +2068,7 @@ export default function GoldAIPlatform() {
 
               <div className="mt-6 rounded-2xl border border-zinc-800 overflow-hidden bg-black h-[700px]">
                 <iframe
+                  loading="lazy"
                   src="https://fxverify.com/widgets/pip-value-calculator?symbol=XAU/USD"
                   width="100%"
                   height="100%"
