@@ -209,6 +209,18 @@ export default function GoldAIPlatform() {
 
     if (savedUsers) {
       setRegisteredUsers(JSON.parse(savedUsers));
+    } else {
+      const defaultAdmin = [
+        {
+          username: 'admin',
+          password: 'admin123',
+          approved: true,
+          role: 'admin',
+        },
+      ];
+
+      setRegisteredUsers(defaultAdmin);
+      localStorage.setItem('gold-ai-users', JSON.stringify(defaultAdmin));
     }
 
     if (savedLogin === 'true') {
@@ -334,7 +346,7 @@ export default function GoldAIPlatform() {
               const profitValue = direction === 'BUY' ? 3.5 : 2.5;
               const estimatedUsd = profitValue * (lotSize / 0.01);
               const isWin = Math.random() > 0.25;
-              const lossValue = estimatedLoss;
+              const lossValue = (slPips / 10) * (lotSize / 0.01);
 
               setClosedTrades((prev) => [
                 {
@@ -940,6 +952,7 @@ export default function GoldAIPlatform() {
     <div className="min-h-screen bg-black text-white">
       <MarqueeStyles />
       <Toaster richColors position="top-right" />
+      {isLoggedIn && (
       <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
@@ -964,23 +977,24 @@ export default function GoldAIPlatform() {
               </button>
             </div>
           </div>
-                  <div className="flex items-center gap-2 flex-wrap justify-end">
+
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             {[
-              ["dashboard", "Dashboard"],
-              ["signals", "Signals"],
-              ["scalper-bot", "Scalper Bot"],
-              ["smartmoney", "Smart Money"],
-              ["macro", "Macro"],
-              ["pips-calculator", "Pips Calculator"],
-              ["ai-lab", "AI Lab"],
+              ['dashboard', 'Dashboard'],
+              ['signals', 'Signals'],
+              ['scalper-bot', 'Scalper Bot'],
+              ['smartmoney', 'Smart Money'],
+              ['macro', 'Macro'],
+              ['pips-calculator', 'Pips Calculator'],
+              ['ai-lab', 'AI Lab'],
             ].map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setActivePage(key)}
                 className={`px-4 py-2 rounded-xl transition-all font-semibold text-sm whitespace-nowrap ${
                   activePage === key
-                    ? "bg-green-500 text-black"
-                    : "bg-zinc-900 border border-zinc-700 text-white hover:border-green-500"
+                    ? 'bg-green-500 text-black'
+                    : 'bg-zinc-900 border border-zinc-700 text-white hover:border-green-500'
                 }`}
               >
                 {label}
@@ -989,9 +1003,10 @@ export default function GoldAIPlatform() {
           </div>
         </div>
       </header>
+      )}
 
-      <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-6 overflow-hidden">
-        {!isLoggedIn ? (
+      {!isLoggedIn ? (
+        <main className="min-h-screen flex items-center justify-center max-w-7xl mx-auto p-4 md:p-6 overflow-hidden">
           <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div>
@@ -1084,8 +1099,9 @@ export default function GoldAIPlatform() {
               </div>
             </div>
           </section>
-        ) : (
-          <>
+        </main>
+      ) : (
+        <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-6 overflow-hidden">
 
         <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 items-center">
@@ -2291,10 +2307,8 @@ export default function GoldAIPlatform() {
               </div>
             ))}
           </section>
-        )}
-                </>
-        )}
-      </main>
+        )}</main>
+      )}
     </div>
   );
 }
