@@ -158,10 +158,22 @@ export default function GoldAIPlatform() {
           ) {
             const direction = livePrice >= goldValue ? 'BUY' : 'SELL';
 
-            const signalMessage = `${direction} opportunity near ${livePrice.toFixed(2)}`;
+            const entry = livePrice.toFixed(2);
+
+            const generatedTp = direction === 'BUY'
+              ? (livePrice + 3.5).toFixed(2)
+              : (livePrice - 3.5).toFixed(2);
+
+            const generatedSl = direction === 'BUY'
+              ? (livePrice - 2.0).toFixed(2)
+              : (livePrice + 2.0).toFixed(2);
+
+            const targetPips = direction === 'BUY' ? '35 PIPS' : '25 PIPS';
+
+            const signalMessage = `${direction} XAUUSD | ENTRY ${entry} | SL ${generatedSl} | TP ${generatedTp}`;
 
             setSignalCount((prev: number) => prev + 1);
-            setLastSignal(signalMessage);
+            setLastSignal(`${direction} XAUUSD`);
             setActiveTrade(true);
             setTradeStatus(`${direction} ENTRY TRIGGERED`);
             setSignalCooldown(180);
@@ -174,16 +186,16 @@ export default function GoldAIPlatform() {
 
             setBotJournal((prev) => [
               {
-                pair: `XAUUSD ${livePrice > goldValue ? 'BUY' : 'SELL'}`,
-                result: 'RUNNING',
+                pair: `${direction} XAUUSD`,
+                result: `${targetPips} TARGET`,
                 session: 'LIVE MARKET',
-                status: 'OPEN',
+                status: `TP ${generatedTp}`,
               },
               ...prev.slice(0, 9),
             ]);
 
             toast.success('Gold Scalper Bot Signal', {
-              description: signalMessage,
+              description: `${signalMessage} | TARGET ${targetPips}`,
             });
 
             if (soundEnabled) {
@@ -193,7 +205,7 @@ export default function GoldAIPlatform() {
             }
 
             new Notification('Gold Scalper Bot', {
-              body: `${direction} momentum triggered near ${livePrice.toFixed(2)}`,
+              body: `${signalMessage} | TARGET ${targetPips}`,
               icon: 'https://cdn-icons-png.flaticon.com/512/2933/2933245.png',
             });
           }
