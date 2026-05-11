@@ -173,7 +173,7 @@ export default function GoldAIPlatform() {
             const signalMessage = `${direction} XAUUSD | ENTRY ${entry} | SL ${generatedSl} | TP ${generatedTp}`;
 
             setSignalCount((prev: number) => prev + 1);
-            setLastSignal(`${direction} XAUUSD`);
+            setLastSignal(signalMessage);
             setActiveTrade(true);
             setTradeStatus(`${direction} ENTRY TRIGGERED`);
             setSignalCooldown(180);
@@ -765,7 +765,7 @@ export default function GoldAIPlatform() {
 
             <OverviewCard
               title="Last Signal"
-              value={lastSignal.length > 18 ? lastSignal.slice(0, 18) + '...' : lastSignal}
+              value={lastSignal.length > 45 ? lastSignal.slice(0, 45) + '...' : lastSignal}
               subtitle="Latest bot alert"
               icon={<Activity className="w-5 h-5 text-red-400" />}
             />
