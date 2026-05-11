@@ -41,6 +41,11 @@ export default function GoldAIPlatform() {
 
   const [lastUpdate, setLastUpdate] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [accountName, setAccountName] = useState('Guest Trader');
+  const [accountMode, setAccountMode] = useState('DEMO');
+  const [tradingStreak, setTradingStreak] = useState(0);
+  const [winTrades, setWinTrades] = useState(0);
+  const [lossTrades, setLossTrades] = useState(0);
   const [signalCount, setSignalCount] = useState(0);
   const [closedTrades, setClosedTrades] = useState<
     {
@@ -118,6 +123,11 @@ export default function GoldAIPlatform() {
     const savedClosedTrades = localStorage.getItem('gold-ai-closed-trades');
     const savedPnl = localStorage.getItem('gold-ai-current-pnl');
     const savedPips = localStorage.getItem('gold-ai-total-pips');
+    const savedAccount = localStorage.getItem('gold-ai-account-name');
+    const savedMode = localStorage.getItem('gold-ai-account-mode');
+    const savedStreak = localStorage.getItem('gold-ai-trading-streak');
+    const savedWins = localStorage.getItem('gold-ai-win-trades');
+    const savedLosses = localStorage.getItem('gold-ai-loss-trades');
 
     if (savedJournal) {
       setBotJournal(JSON.parse(savedJournal));
@@ -134,6 +144,26 @@ export default function GoldAIPlatform() {
     if (savedPips) {
       setTotalPipsWon(Number(savedPips));
     }
+
+    if (savedAccount) {
+      setAccountName(savedAccount);
+    }
+
+    if (savedMode) {
+      setAccountMode(savedMode);
+    }
+
+    if (savedStreak) {
+      setTradingStreak(Number(savedStreak));
+    }
+
+    if (savedWins) {
+      setWinTrades(Number(savedWins));
+    }
+
+    if (savedLosses) {
+      setLossTrades(Number(savedLosses));
+    }
   }, []);
 
   useEffect(() => {
@@ -141,7 +171,12 @@ export default function GoldAIPlatform() {
     localStorage.setItem('gold-ai-closed-trades', JSON.stringify(closedTrades));
     localStorage.setItem('gold-ai-current-pnl', String(currentPnL));
     localStorage.setItem('gold-ai-total-pips', String(totalPipsWon));
-  }, [botJournal, closedTrades, currentPnL, totalPipsWon]);
+    localStorage.setItem('gold-ai-account-name', accountName);
+    localStorage.setItem('gold-ai-account-mode', accountMode);
+    localStorage.setItem('gold-ai-trading-streak', String(tradingStreak));
+    localStorage.setItem('gold-ai-win-trades', String(winTrades));
+    localStorage.setItem('gold-ai-loss-trades', String(lossTrades));
+  }, [botJournal, closedTrades, currentPnL, totalPipsWon, accountName, accountMode, tradingStreak, winTrades, lossTrades]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -253,6 +288,8 @@ export default function GoldAIPlatform() {
               setCurrentPnL((prev) => prev + estimatedUsd);
               setTotalPipsWon((prev) => prev + Number.parseInt(targetPips));
               setTradeStatus('TP HIT');
+              setTradingStreak((prev) => prev + 1);
+              setWinTrades((prev) => prev + 1);
             }, 45000);
 
             toast.success('Gold Scalper Bot Signal', {
@@ -852,6 +889,58 @@ export default function GoldAIPlatform() {
       </header>
 
       <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-6 overflow-hidden">
+        <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 items-center">
+            <div>
+              <div className="text-zinc-500 text-sm">Trader Profile</div>
+              <div className="text-2xl font-black text-green-400 mt-1">
+                {accountName}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-zinc-500 text-sm">Account Mode</div>
+              <div className={`text-2xl font-black mt-1 ${accountMode === 'LIVE' ? 'text-red-400' : 'text-yellow-400'}`}>
+                {accountMode}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-zinc-500 text-sm">Winning Streak</div>
+              <div className="text-2xl font-black text-cyan-400 mt-1">
+                {tradingStreak}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-zinc-500 text-sm">Win Ratio</div>
+              <div className="text-2xl font-black text-green-400 mt-1">
+                {winTrades + lossTrades === 0
+                  ? '0%'
+                  : `${Math.round((winTrades / (winTrades + lossTrades)) * 100)}%`}
+              </div>
+            </div>
+
+            <div className="flex gap-2 flex-wrap justify-end">
+              <button
+                onClick={() => setAccountMode(accountMode === 'LIVE' ? 'DEMO' : 'LIVE')}
+                className="px-4 py-3 rounded-2xl bg-green-500 text-black font-black hover:bg-green-400 transition-all"
+              >
+                SWITCH MODE
+              </button>
+
+              <button
+                onClick={() => {
+                  const trader = prompt('Enter trader name');
+                  if (trader) setAccountName(trader);
+                }}
+                className="px-4 py-3 rounded-2xl border border-zinc-700 bg-black text-white font-bold hover:border-green-500 transition-all"
+              >
+                EDIT PROFILE
+              </button>
+            </div>
+          </div>
+        </section>
         {activePage === "dashboard" && (
           <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
             <MetricCard title="Live Bid" value={marketData.bid || '--'} color="text-green-400" />
