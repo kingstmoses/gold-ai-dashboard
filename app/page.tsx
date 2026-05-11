@@ -104,11 +104,19 @@ export default function GoldAIPlatform() {
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
-      Notification.requestPermission().then((permission) => {
-        if (permission === "granted") {
-          setNotificationsEnabled(true);
-        }
-      });
+      if (Notification.permission === "granted") {
+        setNotificationsEnabled(true);
+      } else {
+        Notification.requestPermission().then((permission) => {
+          if (permission === "granted") {
+            setNotificationsEnabled(true);
+
+            toast.success("Notifications Enabled", {
+              description: "Gold Scalper Bot alerts are now active",
+            });
+          }
+        });
+      }
     }
   }, []);
 
@@ -148,12 +156,14 @@ export default function GoldAIPlatform() {
             signalCooldown === 0 &&
             livePrice > 3000
           ) {
-            const signalMessage = `BUY opportunity near ${livePrice.toFixed(2)}`;
+            const direction = livePrice >= goldValue ? 'BUY' : 'SELL';
+
+            const signalMessage = `${direction} opportunity near ${livePrice.toFixed(2)}`;
 
             setSignalCount((prev: number) => prev + 1);
             setLastSignal(signalMessage);
             setActiveTrade(true);
-            setTradeStatus('ENTRY TRIGGERED');
+            setTradeStatus(`${direction} ENTRY TRIGGERED`);
             setSignalCooldown(180);
 
             if (livePrice > goldValue + 2) {
@@ -183,7 +193,7 @@ export default function GoldAIPlatform() {
             }
 
             new Notification('Gold Scalper Bot', {
-              body: `Momentum BUY triggered near ${livePrice.toFixed(2)}`,
+              body: `${direction} momentum triggered near ${livePrice.toFixed(2)}`,
               icon: 'https://cdn-icons-png.flaticon.com/512/2933/2933245.png',
             });
           }
@@ -197,7 +207,7 @@ export default function GoldAIPlatform() {
 
     fetchGoldPrice();
 
-    const interval = setInterval(fetchGoldPrice, 30000);
+    const interval = setInterval(fetchGoldPrice, 15000);
 
     return () => {
       controller.abort();
@@ -512,22 +522,22 @@ export default function GoldAIPlatform() {
 
   const economicEvents = [
     {
-      event: "US CPI Data",
+      event: marketClosed ? "Market Reopen Watch" : "US CPI Data",
       impact: "HIGH",
-      time: "15:30 EAT",
-      bias: "VOLATILITY SPIKE",
+      time: marketClosed ? "Market Closed" : "15:30 EAT",
+      bias: marketClosed ? "WAITING FOR OPEN" : "VOLATILITY SPIKE",
     },
     {
-      event: "Fed Speech",
-      impact: "MEDIUM",
-      time: "21:00 EAT",
-      bias: "USD WEAKNESS",
+      event: marketClosed ? "Weekend Liquidity" : "Fed Speech",
+      impact: marketClosed ? "LOW" : "MEDIUM",
+      time: marketClosed ? "Weekend Session" : "21:00 EAT",
+      bias: marketClosed ? "LOW VOLUME" : "USD WEAKNESS",
     },
     {
-      event: "NFP Week",
+      event: marketClosed ? "Asian Open Preparation" : "NFP Week",
       impact: "EXTREME",
-      time: "Friday",
-      bias: "GOLD EXPANSION",
+      time: marketClosed ? "Monday Open" : "Friday",
+      bias: marketClosed ? "GAP VOLATILITY" : "GOLD EXPANSION",
     },
   ];
 
