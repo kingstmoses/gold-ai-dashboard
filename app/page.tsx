@@ -82,10 +82,13 @@ export default function GoldAIPlatform() {
     {
       username: string;
       password: string;
+      approved: boolean;
+      role: string;
     }[]
   >([]);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
@@ -211,6 +214,12 @@ export default function GoldAIPlatform() {
     if (savedLogin === 'true') {
       setIsLoggedIn(true);
     }
+
+    const savedAdmin = localStorage.getItem('gold-ai-admin-state');
+
+    if (savedAdmin === 'true') {
+      setIsAdmin(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -226,7 +235,8 @@ export default function GoldAIPlatform() {
     localStorage.setItem('gold-ai-equity-history', JSON.stringify(equityHistory));
     localStorage.setItem('gold-ai-users', JSON.stringify(registeredUsers));
     localStorage.setItem('gold-ai-login-state', String(isLoggedIn));
-  }, [botJournal, closedTrades, currentPnL, totalPipsWon, accountName, accountMode, tradingStreak, winTrades, lossTrades, equityHistory, registeredUsers, isLoggedIn]);
+    localStorage.setItem('gold-ai-admin-state', String(isAdmin));
+  }, [botJournal, closedTrades, currentPnL, totalPipsWon, accountName, accountMode, tradingStreak, winTrades, lossTrades, equityHistory, registeredUsers, isLoggedIn, isAdmin]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -324,6 +334,7 @@ export default function GoldAIPlatform() {
               const profitValue = direction === 'BUY' ? 3.5 : 2.5;
               const estimatedUsd = profitValue * (lotSize / 0.01);
               const isWin = Math.random() > 0.25;
+              const lossValue = estimatedLoss;
 
               setClosedTrades((prev) => [
                 {
@@ -368,7 +379,7 @@ export default function GoldAIPlatform() {
                 setTradeStatus('SL HIT');
                 setTradingStreak(0);
                 setLossTrades((prev) => prev + 1);
-                setCurrentPnL((prev) => prev - estimatedLoss);
+                setCurrentPnL((prev) => prev - lossValue);
 
                 setEquityHistory((history) => [
                   ...history,
@@ -377,7 +388,7 @@ export default function GoldAIPlatform() {
                       hour: '2-digit',
                       minute: '2-digit',
                     }),
-                    pnl: Number((currentPnL - estimatedLoss).toFixed(2)),
+                    pnl: Number((currentPnL - lossValue).toFixed(2)),
                   },
                 ].slice(-20));
               }
@@ -980,7 +991,7 @@ export default function GoldAIPlatform() {
       </header>
 
       <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-6 overflow-hidden">
-        {!isLoggedIn && (
+        {!isLoggedIn ? (
           <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div>
@@ -1024,8 +1035,17 @@ export default function GoldAIPlatform() {
                     );
 
                     if (exists) {
+                      if (!exists.approved) {
+                        toast.error('Account Pending Admin Approval');
+                        return;
+                      }
+
                       setIsLoggedIn(true);
                       setAccountName(loginUsername);
+
+                      if (exists.role === 'admin') {
+                        setIsAdmin(true);
+                      }
 
                       toast.success('Login Successful');
                     } else {
@@ -1049,11 +1069,13 @@ export default function GoldAIPlatform() {
                       {
                         username: loginUsername,
                         password: loginPassword,
+                        approved: false,
+                        role: 'member',
                       },
                     ];
 
                     setRegisteredUsers(updatedUsers);
-                    toast.success('Account Created');
+                    toast.success('Account Registration Submitted For Approval');
                   }}
                   className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-black font-black rounded-2xl px-4 py-4"
                 >
@@ -1062,7 +1084,8 @@ export default function GoldAIPlatform() {
               </div>
             </div>
           </section>
-        )}
+        ) : (
+          <>
 
         <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 items-center">
@@ -1097,6 +1120,24 @@ export default function GoldAIPlatform() {
             </div>
 
             <div className="flex gap-2 flex-wrap justify-end">
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    const updatedUsers = registeredUsers.map((user) => ({
+                      ...user,
+                      approved: true,
+                    }));
+
+                    setRegisteredUsers(updatedUsers);
+
+                    toast.success('All Pending Accounts Approved');
+                  }}
+                  className="px-4 py-3 rounded-2xl bg-cyan-500 text-black font-black hover:bg-cyan-400 transition-all"
+                >
+                  APPROVE USERS
+                </button>
+              )}
+
               <button
                 onClick={() => setAccountMode(accountMode === 'LIVE' ? 'DEMO' : 'LIVE')}
                 className="px-4 py-3 rounded-2xl bg-green-500 text-black font-black hover:bg-green-400 transition-all"
@@ -2250,6 +2291,8 @@ export default function GoldAIPlatform() {
               </div>
             ))}
           </section>
+        )}
+                </>
         )}
       </main>
     </div>
