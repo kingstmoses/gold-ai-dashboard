@@ -323,14 +323,15 @@ export default function GoldAIPlatform() {
             setTimeout(() => {
               const profitValue = direction === 'BUY' ? 3.5 : 2.5;
               const estimatedUsd = profitValue * (lotSize / 0.01);
+              const isWin = Math.random() > 0.25;
 
               setClosedTrades((prev) => [
                 {
                   pair: `${direction} XAUUSD`,
                   pips: targetPips,
                   profit: `+$${estimatedUsd.toFixed(2)}`,
-                  result: Math.random() > 0.25 ? 'TP HIT' : 'SL HIT',
-                  progress: Math.random() > 0.25 ? 'TARGET REACHED' : 'STOP LOSS TRIGGERED',
+                  result: isWin ? 'TP HIT' : 'SL HIT',
+                  progress: isWin ? 'TARGET REACHED' : 'STOP LOSS TRIGGERED',
                   entry: entry,
                   tp: generatedTp,
                   sl: generatedSl,
@@ -339,8 +340,9 @@ export default function GoldAIPlatform() {
                 ...prev.slice(0, 14),
               ]);
 
-              setCurrentPnL((prev) => {
-                const updatedPnL = prev + estimatedUsd;
+              if (isWin) {
+                setCurrentPnL((prev) => {
+                  const updatedPnL = prev + estimatedUsd;
 
                 setEquityHistory((history) => [
                   ...history,
@@ -354,9 +356,8 @@ export default function GoldAIPlatform() {
                 ].slice(-20));
 
                 return updatedPnL;
-              });
-              setTotalPipsWon((prev) => prev + Number.parseInt(targetPips));
-              const isWin = Math.random() > 0.25;
+                });
+              }
 
               if (isWin) {
                 setTradeStatus('TP HIT');
@@ -368,6 +369,17 @@ export default function GoldAIPlatform() {
                 setTradingStreak(0);
                 setLossTrades((prev) => prev + 1);
                 setCurrentPnL((prev) => prev - estimatedLoss);
+
+                setEquityHistory((history) => [
+                  ...history,
+                  {
+                    time: new Date().toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }),
+                    pnl: Number((currentPnL - estimatedLoss).toFixed(2)),
+                  },
+                ].slice(-20));
               }
             }, 45000);
 
@@ -1050,7 +1062,8 @@ export default function GoldAIPlatform() {
               </div>
             </div>
           </section>
-        )
+        )}
+
         <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 items-center">
             <div>
@@ -2144,7 +2157,7 @@ export default function GoldAIPlatform() {
                 />
               </div>
 
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4">
                 <MetricCard
                   title="Daily Target"
                   value={`$${dailyTarget}`}
